@@ -6,7 +6,7 @@ It provides a clean and user-friendly interface to manage bus details, bus types
 🚀 Live Application (Vercel)
 
 👉 Frontend URL:
-https://bus-travel-log.vercel.app
+http://localhost:3000/
 
 ⚠️ Important Note (Backend on Render – Free Plan)
 
