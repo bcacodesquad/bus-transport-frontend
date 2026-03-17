@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy JAR app to Azure Web App - bus-frontend
+name: Build and deploy Node.js app to Azure Web App - bus-frontend
 
 on:
   push:
@@ -18,20 +18,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java version
-        uses: actions/setup-java@v4
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
         with:
-          java-version: '17'
-          distribution: 'microsoft'
+          node-version: '20.x'
 
-      - name: Build with Maven
-        run: mvn clean install
+      - name: npm install, build, and test
+        run: |
+          npm install
+          npm run build --if-present
+          npm run test --if-present
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: java-app
-          path: '${{ github.workspace }}/target/*.jar'
+          name: node-app
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
@@ -39,25 +41,25 @@ jobs:
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
-  
+
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: java-app
+          name: node-app
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A89E31B5E4A7433FACED2DB90C87EB3A }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_528BB5AC102244F89485FF3128CC5321 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A825E79059174D6DAD836DA86842DD39 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E97BF74765154FD395CB5DA4C33C748D }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BC08ED39CE584BC1A86790B11F8C699C }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_54A5A0B2A61544AA833A05DBA6B8F765 }}
 
-      - name: Deploy to Azure Web App
+      - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bus-frontend'
           slot-name: 'Production'
-          package: '*.jar'
+          package: .
           
