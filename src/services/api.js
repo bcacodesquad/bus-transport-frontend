@@ -1,15 +1,78 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
+const API_HOST_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const API_BASE_URL = `${API_HOST_URL.replace(/\/$/, '')}/api`;
+const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT, 10) || 30000;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Bus API
+// Centralized response error normalization
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      'An unexpected error occurred';
+    return Promise.reject(new Error(message));
+  }
+);
+
+// ─── Standalone named bus functions (with try-catch) ────────────────────────
+
+export async function getAllBuses() {
+  try {
+    const response = await api.get('/buses');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getBusById(id) {
+  try {
+    const response = await api.get(`/buses/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function addBus(data) {
+  try {
+    const response = await api.post('/buses', data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function updateBus(id, data) {
+  try {
+    const response = await api.put(`/buses/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function deleteBus(id) {
+  try {
+    await api.delete(`/buses/${id}`);
+  } catch (error) {
+    throw error;
+  }
+}
+
+// ─── Object-style API helpers (kept for existing components) ─────────────────
+
 export const busAPI = {
   getAll: () => api.get('/buses'),
   getById: (id) => api.get(`/buses/${id}`),
@@ -18,7 +81,6 @@ export const busAPI = {
   delete: (id) => api.delete(`/buses/${id}`),
 };
 
-// Route API
 export const routeAPI = {
   getAll: () => api.get('/routes'),
   getById: (id) => api.get(`/routes/${id}`),
@@ -27,7 +89,6 @@ export const routeAPI = {
   delete: (id) => api.delete(`/routes/${id}`),
 };
 
-// Schedule API
 export const scheduleAPI = {
   getAll: () => api.get('/schedules'),
   getById: (id) => api.get(`/schedules/${id}`),
@@ -36,7 +97,6 @@ export const scheduleAPI = {
   delete: (id) => api.delete(`/schedules/${id}`),
 };
 
-// Timetable API
 export const timetableAPI = {
   getAll: () => api.get('/timetables'),
   getById: (id) => api.get(`/timetables/${id}`),
@@ -45,7 +105,6 @@ export const timetableAPI = {
   delete: (id) => api.delete(`/timetables/${id}`),
 };
 
-// User API
 export const userAPI = {
   getAll: () => api.get('/users'),
   getById: (id) => api.get(`/users/${id}`),
