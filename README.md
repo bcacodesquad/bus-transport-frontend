@@ -26,6 +26,7 @@ This frontend consumes REST APIs from the Spring Boot backend.
 
 Backend Repository:
 https://github.com/mugiultra/bus-transport-backend
+Deployment Test
 
 Backend Base URL:
 
