@@ -51,9 +51,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1F0C0BC012D84180A9405BAE3CA5ED86 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_040517DF21244846A96DDBA63DFAAC72 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_64EEAB3219A74D91A461877FBCC4A6FC }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D8EB9FC10A61443B88EBCDB21ECA907A }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_92449528F2214904A8AC534AC889AA8B }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_27CAC2B5F1314C31988E41620539BC43 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -61,6 +61,5 @@ jobs:
         with:
           app-name: 'bus-transport-mugesh-frontend'
           slot-name: 'Production'
-          startup-command: 'npm start'
           package: .
           
