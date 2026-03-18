@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-const API_HOST_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
-const API_BASE_URL = `${API_HOST_URL.replace(/\/$/, '')}/api`;
+const API_HOST_URL = (process.env.REACT_APP_API_URL || 'http://localhost:8080').trim();
+const API_NORMALIZED_URL = API_HOST_URL.replace(/\/+$/, '');
+const API_BASE_URL = /\/api$/i.test(API_NORMALIZED_URL)
+  ? API_NORMALIZED_URL
+  : `${API_NORMALIZED_URL}/api`;
 const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT, 10) || 30000;
 
 const api = axios.create({
@@ -16,12 +19,18 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      'An unexpected error occurred';
-    return Promise.reject(new Error(message));
+    const isNetworkError = !error.response;
+    const message = isNetworkError
+      ? 'Unable to reach the backend API. Verify REACT_APP_API_URL and backend CORS settings for this frontend domain.'
+      : error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'An unexpected error occurred';
+
+    const normalizedError = new Error(message);
+    normalizedError.status = error.response?.status;
+    normalizedError.isNetworkError = isNetworkError;
+    return Promise.reject(normalizedError);
   }
 );
 
