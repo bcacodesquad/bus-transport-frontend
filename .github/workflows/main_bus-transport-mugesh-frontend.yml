@@ -54,7 +54,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: webapp-package
-          path: .
+          path: deploy
+
+      - name: Verify deployment package
+        run: |
+          ls -la deploy
+          ls -la deploy/build
 
       - name: Login to Azure
         uses: azure/login@v2
