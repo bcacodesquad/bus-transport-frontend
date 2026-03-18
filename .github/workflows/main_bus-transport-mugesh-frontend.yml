@@ -2,6 +2,7 @@ name: Build and deploy Node.js app to Azure Web App - bus-transport-mugesh-front
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  APP_NAME: bus-transport-mugesh-frontend-b4emfjcrc8gkhqhu
 
 on:
   push:
@@ -73,7 +74,6 @@ jobs:
       - name: Resolve Resource Group
         id: resolve-rg
         run: |
-          APP_NAME="bus-transport-mugesh-frontend"
           RG_NAME=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup | [0]" -o tsv)
           if [ -z "$RG_NAME" ]; then
             echo "Unable to resolve resource group for ${APP_NAME}" >&2
@@ -82,19 +82,22 @@ jobs:
           echo "Resolved resource group: $RG_NAME"
           echo "RG_NAME=$RG_NAME" >> $GITHUB_ENV
 
-      - name: Deploy ZIP with Azure CLI
+      - name: Deploy ZIP with Config-Zip
         run: |
-          az webapp deploy \
-            --name bus-transport-mugesh-frontend \
+          az webapp deployment source config-zip \
+            --name "$APP_NAME" \
             --resource-group "$RG_NAME" \
-            --src-path site.zip \
-            --type zip \
-            --clean true \
-            --restart true
+            --src site.zip
 
       - name: Configure startup command
         run: |
           az webapp config set \
-            --name bus-transport-mugesh-frontend \
+            --name "$APP_NAME" \
             --resource-group "$RG_NAME" \
             --startup-file "pm2 serve /home/site/wwwroot --no-daemon --spa"
+
+      - name: Restart Web App
+        run: |
+          az webapp restart \
+            --name "$APP_NAME" \
+            --resource-group "$RG_NAME"
