@@ -101,3 +101,11 @@ jobs:
           az webapp restart \
             --name "$APP_NAME" \
             --resource-group "$RG_NAME"
+
+      - name: Dump Kudu Deployment Error
+        if: failure()
+        run: |
+          USERNAME=$(az webapp deployment list-publishing-profiles --name "$APP_NAME" --resource-group "$RG_NAME" --query "[0].userName" -o tsv)
+          PASSWORD=$(az webapp deployment list-publishing-profiles --name "$APP_NAME" --resource-group "$RG_NAME" --query "[0].userPWD" -o tsv)
+          echo "Fetching latest deployment details from Kudu"
+          curl -sS -u "$USERNAME:$PASSWORD" "https://${APP_NAME}.scm.southeastasia-01.azurewebsites.net/api/deployments/latest"
