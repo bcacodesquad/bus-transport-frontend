@@ -61,6 +61,7 @@ jobs:
         run: |
           ls -la
           unzip -l site.zip | head -n 40
+          du -h site.zip
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -69,11 +70,31 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_92449528F2214904A8AC534AC889AA8B }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_27CAC2B5F1314C31988E41620539BC43 }}
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: bus-transport-mugesh-frontend
-          slot-name: Production
-          package: ./site.zip
-          startup-command: pm2 serve /home/site/wwwroot --no-daemon --spa
+      - name: Resolve Resource Group
+        id: resolve-rg
+        run: |
+          APP_NAME="bus-transport-mugesh-frontend"
+          RG_NAME=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup | [0]" -o tsv)
+          if [ -z "$RG_NAME" ]; then
+            echo "Unable to resolve resource group for ${APP_NAME}" >&2
+            exit 1
+          fi
+          echo "Resolved resource group: $RG_NAME"
+          echo "RG_NAME=$RG_NAME" >> $GITHUB_ENV
+
+      - name: Deploy ZIP with Azure CLI
+        run: |
+          az webapp deploy \
+            --name bus-transport-mugesh-frontend \
+            --resource-group "$RG_NAME" \
+            --src-path site.zip \
+            --type zip \
+            --clean true \
+            --restart true
+
+      - name: Configure startup command
+        run: |
+          az webapp config set \
+            --name bus-transport-mugesh-frontend \
+            --resource-group "$RG_NAME" \
+            --startup-file "pm2 serve /home/site/wwwroot --no-daemon --spa"
