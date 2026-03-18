@@ -1,11 +1,15 @@
 # Dependencies and package managers
 node_modules/
+node_modules
+node_modules.tar.gz
+_del_node_modules
 node/
 /.pnp
 .pnp.js
 
 # Build and coverage outputs
 build/
+build
 coverage/
 .cache/
 .eslintcache
