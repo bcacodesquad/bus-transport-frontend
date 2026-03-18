@@ -25,20 +25,22 @@ jobs:
 
       - name: Install dependencies and build
         run: |
-          npm install
+          npm ci
           npm run build
+
+      - name: Prepare deployment package
+        run: |
+          rm -rf deploy
+          mkdir -p deploy
+          cp -r build deploy/build
+          cp package.json deploy/package.json
+          if [ -f package-lock.json ]; then cp package-lock.json deploy/package-lock.json; fi
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: |
-            .
-            !node_modules
-            !node_modules/**
-            !node_modules.tar.gz
-            !.git
-            !.github
+          name: webapp-package
+          path: deploy
 
   deploy:
     runs-on: ubuntu-latest
@@ -51,7 +53,8 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: node-app
+          name: webapp-package
+          path: .
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -66,5 +69,5 @@ jobs:
         with:
           app-name: bus-transport-mugesh-frontend
           slot-name: Production
-          package: .
+          package: ./deploy
           startup-command: npm start
