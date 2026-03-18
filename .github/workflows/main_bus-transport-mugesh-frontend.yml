@@ -67,3 +67,4 @@ jobs:
           app-name: bus-transport-mugesh-frontend
           slot-name: Production
           package: .
+          startup-command: npm start
