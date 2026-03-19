@@ -3,7 +3,7 @@
 This is a repository contains the React frontend for the Bus Transport Management System.
 It provides a clean and user-friendly interface to manage bus details, bus types, and seat information, and communicates with a Spring Boot backend deployed on Render.
 
-🚀 Live Application (Ver adsdcel)
+🚀 Live Application (Vercel)
 
 👉 Frontend URL:
 http://localhost:3000/
