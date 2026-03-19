@@ -115,13 +115,12 @@ jobs:
         if: ${{ always() && secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         run: |
           echo "Using OIDC fallback path. If this job fails with AuthorizationFailed, grant the service principal access to the Web App or set AZURE_WEBAPP_PUBLISH_PROFILE." 
-=======
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bus-transport-mugesh-frontend'
           slot-name: 'Production'
-          package: .
+          package: build
           
->>>>>>> 597333eaa5c674ec47cadad02a7c8a6c26e338d4
