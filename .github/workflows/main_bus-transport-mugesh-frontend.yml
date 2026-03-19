@@ -9,15 +9,13 @@ on:
 env:
   APP_NAME: bus-transport-mugesh-frontend
   NODE_VERSION: "20.x"
+  REACT_APP_API_URL: https://bus-management-backend-fmbhcqbjetejbmbx.southeastasia-01.azurewebsites.net
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
-    outputs:
-      app_dir: ${{ steps.detect.outputs.dir }}
 
     steps:
       - name: Checkout
@@ -27,12 +25,12 @@ jobs:
         id: detect
         shell: bash
         run: |
-          if [ -f "package.json" ] && [ -f "package-lock.json" ]; then
-            echo "dir=." >> "$GITHUB_OUTPUT"
-          elif [ -f "frontend/package.json" ] && [ -f "frontend/package-lock.json" ]; then
+          if [ -f "frontend/package.json" ] && [ -f "frontend/package-lock.json" ]; then
             echo "dir=frontend" >> "$GITHUB_OUTPUT"
+          elif [ -f "package.json" ] && [ -f "package-lock.json" ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
           else
-            echo "package.json + package-lock.json not found in root or frontend"
+            echo "Could not find package.json and package-lock.json in root or frontend folder."
             ls -la
             exit 1
           fi
@@ -46,13 +44,12 @@ jobs:
 
       - name: Install dependencies
         working-directory: ${{ steps.detect.outputs.dir }}
-        run: |
-          npm ci || npm install --no-audit --no-fund
+        run: npm ci || npm install --no-audit --no-fund
 
       - name: Build
         working-directory: ${{ steps.detect.outputs.dir }}
         env:
-          REACT_APP_API_URL: https://bus-management-backend-fmbhcqbjetejbmbx.southeastasia-01.azurewebsites.net
+          REACT_APP_API_URL: ${{ env.REACT_APP_API_URL }}
         run: npm run build
 
       - name: Upload build artifact
@@ -75,7 +72,7 @@ jobs:
           name: react-build
           path: react-build
 
-      - name: Create zip package
+      - name: Create deployment zip
         shell: bash
         run: |
           cd react-build
@@ -94,43 +91,32 @@ jobs:
         run: |
           RG_NAME=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup | [0]" -o tsv)
           if [ -z "$RG_NAME" ]; then
-            echo "Could not resolve resource group for ${APP_NAME}"
+            echo "Unable to resolve resource group for ${APP_NAME}"
             exit 1
           fi
           echo "name=$RG_NAME" >> "$GITHUB_OUTPUT"
-          echo "Resolved RG: $RG_NAME"
+          echo "Resolved resource group: $RG_NAME"
 
-      - name: Disable Oryx build
-        run: |
-          az webapp config appsettings set \
-            --name "${{ env.APP_NAME }}" \
-            --resource-group "${{ steps.rg.outputs.name }}" \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false
-
-      - name: Remove WEBSITE_RUN_FROM_PACKAGE (if exists)
+      - name: Configure App Service before deploy
         shell: bash
         run: |
-          az webapp config appsettings delete \
-            --name "${{ env.APP_NAME }}" \
+          az webapp config appsettings set \
+            --name "${APP_NAME}" \
             --resource-group "${{ steps.rg.outputs.name }}" \
-            --setting-names WEBSITE_RUN_FROM_PACKAGE || true
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false WEBSITE_NODE_DEFAULT_VERSION="~20"
 
-      - name: Deploy zip (config-zip)
-        run: |
-          az webapp deployment source config-zip \
-            --name "${{ env.APP_NAME }}" \
-            --resource-group "${{ steps.rg.outputs.name }}" \
-            --src site.zip
-
-      - name: Set startup command for SPA
-        run: |
           az webapp config set \
-            --name "${{ env.APP_NAME }}" \
+            --name "${APP_NAME}" \
             --resource-group "${{ steps.rg.outputs.name }}" \
-            --startup-file "pm2 serve /home/site/wwwroot --no-daemon --spa"
+            --startup-file "pm2 serve /home/site/wwwroot --no-daemon --spa --port 8080"
 
-      - name: Restart web app
+      - name: Deploy zip package
+        shell: bash
         run: |
-          az webapp restart \
-            --name "${{ env.APP_NAME }}" \
-            --resource-group "${{ steps.rg.outputs.name }}"
+          az webapp deploy \
+            --name "${APP_NAME}" \
+            --resource-group "${{ steps.rg.outputs.name }}" \
+            --src-path site.zip \
+            --type zip \
+            --restart true
+    
