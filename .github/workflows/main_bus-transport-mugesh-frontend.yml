@@ -49,7 +49,6 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B5328834B2504C2787C74C081E24EF22 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F76C8F9E88E2467D89940980DC136EB7 }}
 
-<<<<<<< HEAD
       - name: Verify deployment package
         run: |
           ls -la
