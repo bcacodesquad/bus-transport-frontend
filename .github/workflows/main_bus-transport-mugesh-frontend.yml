@@ -65,7 +65,16 @@ jobs:
           unzip -l site.zip | head -n 40
           du -h site.zip
 
+      - name: Deploy with publish profile
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE != '' }}
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.APP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: site.zip
+
       - name: Login to Azure
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D8EB9FC10A61443B88EBCDB21ECA907A }}
@@ -74,6 +83,7 @@ jobs:
 
       - name: Resolve Resource Group
         id: resolve-rg
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         run: |
           if [ -n "${RESOURCE_GROUP}" ]; then
             RG_NAME="${RESOURCE_GROUP}"
@@ -87,14 +97,17 @@ jobs:
           echo "Resolved resource group: $RG_NAME"
           echo "RG_NAME=$RG_NAME" >> $GITHUB_ENV
 
-      - name: Deploy ZIP with Config-Zip
+      - name: Deploy ZIP with az webapp deploy (fallback)
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         run: |
-          az webapp deployment source config-zip \
+          az webapp deploy \
             --name "$APP_NAME" \
             --resource-group "$RG_NAME" \
-            --src site.zip
+            --type zip \
+            --src-path site.zip
 
       - name: Configure startup command
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         run: |
           az webapp config set \
             --name "$APP_NAME" \
@@ -102,7 +115,13 @@ jobs:
             --startup-file "pm2 serve /home/site/wwwroot --no-daemon --spa"
 
       - name: Restart Web App
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         run: |
           az webapp restart \
             --name "$APP_NAME" \
             --resource-group "$RG_NAME"
+
+      - name: Fail when no deployment auth is configured
+        if: ${{ always() && secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
+        run: |
+          echo "Using OIDC fallback path. If this job fails with AuthorizationFailed, grant the service principal access to the Web App or set AZURE_WEBAPP_PUBLISH_PROFILE." 

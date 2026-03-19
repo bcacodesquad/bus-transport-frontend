@@ -2,8 +2,10 @@ import axios from 'axios';
 
 const API_HOST_URL = (process.env.REACT_APP_API_URL || 'http://localhost:8080').trim();
 const API_NORMALIZED_URL = API_HOST_URL.replace(/\/+$/, '');
-const API_BASE_URL = /\/api$/i.test(API_NORMALIZED_URL)
-  ? API_NORMALIZED_URL
+// Accept values like host, host/api, or host/api/buses and normalize all to host/api
+const API_API_ROOT_URL = API_NORMALIZED_URL.replace(/(\/api)(?:\/.*)?$/i, '$1');
+const API_BASE_URL = API_API_ROOT_URL.endsWith('/api')
+  ? API_API_ROOT_URL
   : `${API_NORMALIZED_URL}/api`;
 const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT, 10) || 30000;
 
