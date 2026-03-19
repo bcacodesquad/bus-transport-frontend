@@ -20,6 +20,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Detect app directory
+        id: appdir
+        shell: bash
+        run: |
+          if [ -f "package.json" ] && [ -f "package-lock.json" ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          elif [ -f "frontend/package.json" ] && [ -f "frontend/package-lock.json" ]; then
+            echo "dir=frontend" >> "$GITHUB_OUTPUT"
+          else
+            echo "Could not find package.json + package-lock.json in root or frontend folder."
+            ls -la
+            exit 1
+          fi
+          echo "Using app directory: $(cat "$GITHUB_OUTPUT" | sed -n 's/^dir=//p')"
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -29,19 +44,19 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: frontend
+        working-directory: ${{ steps.appdir.outputs.dir }}
 
       - name: Build React app
         env:
           REACT_APP_API_URL: https://bus-management-backend-fmbhcqbjetejbmbx.southeastasia-01.azurewebsites.net
         run: npm run build
-        working-directory: frontend
+        working-directory: ${{ steps.appdir.outputs.dir }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: react-build
-          path: frontend/build
+          path: ${{ steps.appdir.outputs.dir }}/build
 
   deploy:
     runs-on: ubuntu-latest
