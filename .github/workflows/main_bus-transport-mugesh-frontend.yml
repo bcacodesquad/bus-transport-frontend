@@ -29,7 +29,7 @@ jobs:
           elif [ -f "frontend/package.json" ] && [ -f "frontend/package-lock.json" ]; then
             echo "dir=frontend" >> "$GITHUB_OUTPUT"
           else
-            echo "Could not find package.json + package-lock.json in root or frontend folder."
+            echo "Could not find package.json + package-lock.json in root or frontend."
             ls -la
             exit 1
           fi
@@ -64,8 +64,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
 
     steps:
       - name: Download build artifact
@@ -74,27 +72,43 @@ jobs:
           name: react-build
           path: react-build
 
+      - name: Create deployment zip
+        shell: bash
+        run: |
+          cd react-build
+          zip -r ../site.zip .
+
       - name: Login to Azure (OIDC)
-        if: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4194532722E94BDAB72D04B4E425CA29 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B5328834B2504C2787C74C081E24EF22 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F76C8F9E88E2467D89940980DC136EB7 }}
 
-      - name: Deploy with publish profile
-        if: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE != '' }}
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.APP_NAME }}
-          slot-name: Production
-          publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: react-build
+      - name: Disable Oryx build and enable run from package
+        run: |
+          az webapp config appsettings set \
+            --name "${{ env.APP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false WEBSITE_RUN_FROM_PACKAGE=1
 
-      - name: Deploy with OIDC
-        if: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.APP_NAME }}
-          slot-name: Production
-          package: react-build
+      - name: Deploy zip package
+        run: |
+          az webapp deploy \
+            --name "${{ env.APP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --type zip \
+            --src-path site.zip
+
+      - name: Configure startup command
+        run: |
+          az webapp config set \
+            --name "${{ env.APP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --startup-file "pm2 serve /home/site/wwwroot --no-daemon --spa"
+
+      - name: Restart Web App
+        run: |
+          az webapp restart \
+            --name "${{ env.APP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}"
