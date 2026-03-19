@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -22,26 +22,36 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20.x'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React app
+        env:
+          REACT_APP_API_URL: https://bus-management-backend-fmbhcqbjetejbmbx.southeastasia-01.azurewebsites.net
+        run: npm run build
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: .
+          name: react-build
+          path: build
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-      
+          name: react-build
+          path: build
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -49,80 +59,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B5328834B2504C2787C74C081E24EF22 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F76C8F9E88E2467D89940980DC136EB7 }}
 
-<<<<<<< HEAD
-      - name: Verify deployment package
-        run: |
-          ls -la
-          unzip -l site.zip | head -n 40
-          du -h site.zip
-
-      - name: Deploy with publish profile
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE != '' }}
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.APP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: site.zip
-
-      - name: Login to Azure
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D8EB9FC10A61443B88EBCDB21ECA907A }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_92449528F2214904A8AC534AC889AA8B }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_27CAC2B5F1314C31988E41620539BC43 }}
-
-      - name: Resolve Resource Group
-        id: resolve-rg
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
-        run: |
-          if [ -n "${RESOURCE_GROUP}" ]; then
-            RG_NAME="${RESOURCE_GROUP}"
-          else
-            RG_NAME=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup | [0]" -o tsv)
-          fi
-          if [ -z "$RG_NAME" ]; then
-            echo "Unable to resolve resource group for ${APP_NAME}" >&2
-            exit 1
-          fi
-          echo "Resolved resource group: $RG_NAME"
-          echo "RG_NAME=$RG_NAME" >> $GITHUB_ENV
-
-      - name: Deploy ZIP with az webapp deploy (fallback)
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
-        run: |
-          az webapp deploy \
-            --name "$APP_NAME" \
-            --resource-group "$RG_NAME" \
-            --type zip \
-            --src-path site.zip
-
-      - name: Configure startup command
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
-        run: |
-          az webapp config set \
-            --name "$APP_NAME" \
-            --resource-group "$RG_NAME" \
-            --startup-file "pm2 serve /home/site/wwwroot --no-daemon --spa"
-
-      - name: Restart Web App
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
-        run: |
-          az webapp restart \
-            --name "$APP_NAME" \
-            --resource-group "$RG_NAME"
-
-      - name: Fail when no deployment auth is configured
-        if: ${{ always() && secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
-        run: |
-          echo "Using OIDC fallback path. If this job fails with AuthorizationFailed, grant the service principal access to the Web App or set AZURE_WEBAPP_PUBLISH_PROFILE." 
-=======
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bus-transport-mugesh-frontend'
           slot-name: 'Production'
-          package: .
-          
->>>>>>> 597333eaa5c674ec47cadad02a7c8a6c26e338d4
+          package: build
