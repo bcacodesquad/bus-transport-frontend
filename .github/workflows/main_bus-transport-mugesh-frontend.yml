@@ -3,6 +3,7 @@ name: Build and deploy Node.js app to Azure Web App - bus-transport-mugesh-front
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   APP_NAME: bus-transport-mugesh-frontend-b4emfjcrc8gkhqhu
+  RESOURCE_GROUP: ${{ secrets.AZURE_WEBAPP_RESOURCE_GROUP }}
 
 on:
   push:
@@ -74,7 +75,11 @@ jobs:
       - name: Resolve Resource Group
         id: resolve-rg
         run: |
-          RG_NAME=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup | [0]" -o tsv)
+          if [ -n "${RESOURCE_GROUP}" ]; then
+            RG_NAME="${RESOURCE_GROUP}"
+          else
+            RG_NAME=$(az webapp list --query "[?name=='${APP_NAME}'].resourceGroup | [0]" -o tsv)
+          fi
           if [ -z "$RG_NAME" ]; then
             echo "Unable to resolve resource group for ${APP_NAME}" >&2
             exit 1
@@ -101,11 +106,3 @@ jobs:
           az webapp restart \
             --name "$APP_NAME" \
             --resource-group "$RG_NAME"
-
-      - name: Dump Kudu Deployment Error
-        if: failure()
-        run: |
-          USERNAME=$(az webapp deployment list-publishing-profiles --name "$APP_NAME" --resource-group "$RG_NAME" --query "[0].userName" -o tsv)
-          PASSWORD=$(az webapp deployment list-publishing-profiles --name "$APP_NAME" --resource-group "$RG_NAME" --query "[0].userPWD" -o tsv)
-          echo "Fetching latest deployment details from Kudu"
-          curl -sS -u "$USERNAME:$PASSWORD" "https://${APP_NAME}.scm.southeastasia-01.azurewebsites.net/api/deployments/latest"
