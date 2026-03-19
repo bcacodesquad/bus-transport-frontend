@@ -33,7 +33,6 @@ jobs:
             ls -la
             exit 1
           fi
-          echo "Using app directory: $(cat "$GITHUB_OUTPUT" | sed -n 's/^dir=//p')"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -43,7 +42,8 @@ jobs:
           cache-dependency-path: "**/package-lock.json"
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci || npm install --no-audit --no-fund
         working-directory: ${{ steps.appdir.outputs.dir }}
 
       - name: Build React app
