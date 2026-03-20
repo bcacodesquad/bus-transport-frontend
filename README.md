@@ -86,7 +86,7 @@ http://localhost:3000
 
 Create a .env file in the project root:
 
-REACT_APP_API_URL=http://localhost:8080/api/buses
+REACT_APP_API_URL=http://localhost:8080/api
 
 
 Restart the development server after updating environment variables.
