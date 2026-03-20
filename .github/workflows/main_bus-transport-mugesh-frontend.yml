@@ -46,6 +46,21 @@ jobs:
         working-directory: ${{ steps.detect.outputs.dir }}
         run: npm ci || npm install --no-audit --no-fund
 
+      - name: Validate frontend API URL
+        shell: bash
+        run: |
+          echo "Build-time REACT_APP_API_URL=${REACT_APP_API_URL}"
+          if [ -z "${REACT_APP_API_URL}" ]; then
+            echo "REACT_APP_API_URL is empty. Set it in workflow env or GitHub secrets."
+            exit 1
+          fi
+
+          # Prevent deploying endpoint URLs like /api/buses; app code expects host or /api root.
+          if [[ "${REACT_APP_API_URL}" =~ /api/.+ ]]; then
+            echo "REACT_APP_API_URL should not include endpoint paths (example bad value: .../api/buses)."
+            exit 1
+          fi
+
       - name: Build
         working-directory: ${{ steps.detect.outputs.dir }}
         env:
