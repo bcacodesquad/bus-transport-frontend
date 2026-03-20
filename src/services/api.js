@@ -1,12 +1,22 @@
 import axios from 'axios';
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL ||
-  'http://localhost:8080/api';
+const AZURE_FRONTEND_HOST = 'bus-transport-mugesh-frontend-b4emfjcrc8gkhqhu.southeastasia-01.azurewebsites.net';
+const AZURE_BACKEND_API = 'https://bus-management-backend-fmbhcqbjetejbmbx.southeastasia-01.azurewebsites.net/api';
 
-if (!process.env.REACT_APP_API_URL) {
-  console.warn('REACT_APP_API_URL is not set. Falling back to http://localhost:8080/api');
+function resolveApiBaseUrl() {
+  const envUrl = (process.env.REACT_APP_API_URL || '').trim();
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '');
+  }
+
+  if (typeof window !== 'undefined' && window.location.hostname === AZURE_FRONTEND_HOST) {
+    return AZURE_BACKEND_API;
+  }
+
+  return 'http://localhost:8080/api';
 }
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT, 10) || 30000;
 const API_WITH_CREDENTIALS = process.env.REACT_APP_API_WITH_CREDENTIALS === 'true';
@@ -26,6 +36,9 @@ api.interceptors.response.use(
       ? 'Unable to reach the backend API. Verify REACT_APP_API_URL and backend CORS settings for this frontend domain.'
       : error.response?.data?.message ||
         error.response?.data?.error ||
+        (error.response?.status === 404
+          ? 'API endpoint not found (404). Verify API base URL points to backend /api, not the frontend domain.'
+          : null) ||
         error.message ||
         'An unexpected error occurred';
 
