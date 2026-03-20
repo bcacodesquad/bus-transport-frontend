@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_HOST_URL = (process.env.REACT_APP_API_URL || '').trim();
+const API_HOST_URL = "https://bus-management-backend-fmbhcqbjetejbmbx.southeastasia-01.azurewebsites.net/api/buses";
 
 if (!API_HOST_URL) {
   console.error("❌ REACT_APP_API_URL is missing!");
