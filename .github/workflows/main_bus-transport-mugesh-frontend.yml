@@ -9,7 +9,7 @@ on:
 env:
   APP_NAME: bus-transport-mugesh-frontend
   NODE_VERSION: "20.x"
-  REACT_APP_API_URL: https://bus-management-backend-fmbhcqbjetejbmbx.southeastasia-01.azurewebsites.net
+  REACT_APP_API_URL: https://bus-management-backend-fmbhcqbjetejbmbx.southeastasia-01.azurewebsites.net/api
 
 jobs:
   build:

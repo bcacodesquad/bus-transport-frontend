@@ -18,7 +18,7 @@ function resolveApiBaseUrl() {
 
 const API_BASE_URL = resolveApiBaseUrl();
 
-const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT, 10) || 30000;
+const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT, 10) || 120000;
 const API_WITH_CREDENTIALS = process.env.REACT_APP_API_WITH_CREDENTIALS === 'true';
 
 const api = axios.create({
@@ -31,8 +31,11 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const isTimeoutError = error.code === 'ECONNABORTED';
     const isNetworkError = !error.response;
-    const message = isNetworkError
+    const message = isTimeoutError
+      ? 'Backend request timed out. The server may be waking up on Azure; wait a few seconds and retry.'
+      : isNetworkError
       ? 'Unable to reach the backend API. Verify REACT_APP_API_URL and backend CORS settings for this frontend domain.'
       : error.response?.data?.message ||
         error.response?.data?.error ||
