@@ -6,7 +6,7 @@ It provides a clean and user-friendly interface to manage bus details, bus types
 🚀 Live Application (Vercel)
 
 👉 Frontend URL:
-http://localhost:3000/
+https://bus-transport-mugesh-frontend-b4emfjcrc8gkhqhu.southeastasia-01.azurewebsites.net/
 
 ⚠️ Important Note (Backend on Render – Free Plan)
 
