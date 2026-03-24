@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { busAPI, routeAPI, scheduleAPI, userAPI } from '../services/api';
+import Login from './login'; // ✅ import login
 
 const AdminModule = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // ✅ login state
+
   const [stats, setStats] = useState({
     totalBuses: 0,
     totalRoutes: 0,
@@ -10,11 +13,23 @@ const AdminModule = () => {
     activeBuses: 0,
     activeRoutes: 0
   });
+
   const [loading, setLoading] = useState(true);
 
+  // ✅ Check login on load
   useEffect(() => {
-    fetchStats();
+    const status = localStorage.getItem("isAdminLoggedIn");
+    if (status === "true") {
+      setIsLoggedIn(true);
+    }
   }, []);
+
+  // ✅ Fetch stats only if logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchStats();
+    }
+  }, [isLoggedIn]);
 
   const fetchStats = async () => {
     try {
@@ -44,11 +59,29 @@ const AdminModule = () => {
     }
   };
 
+  // ✅ If not logged in → show login page
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
+  }
+
   return (
     <div className="glass-card">
-      <div className="module-header">
-        <span className="module-icon">🛠</span>
-        <h2>Admin Dashboard</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div className="module-header">
+          <span className="module-icon">🛠</span>
+          <h2>Admin Dashboard</h2>
+        </div>
+
+        {/* ✅ Logout button */}
+        <button
+          className="btn btn-danger"
+          onClick={() => {
+            localStorage.removeItem("isAdminLoggedIn");
+            setIsLoggedIn(false);
+          }}
+        >
+          Logout
+        </button>
       </div>
 
       {loading ? (
@@ -88,7 +121,9 @@ const AdminModule = () => {
         <div style={{ display: 'grid', gap: '15px' }}>
           <button className="btn btn-primary">Configure System</button>
           <button className="btn btn-secondary">View Reports</button>
-          <button className="btn btn-warning" onClick={fetchStats}>Refresh Statistics</button>
+          <button className="btn btn-warning" onClick={fetchStats}>
+            Refresh Statistics
+          </button>
         </div>
       </div>
     </div>
